@@ -1,0 +1,19 @@
+[package]
+name = "fastmulp-napi"
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+fastmulp-core = { path = "../fastmulp_core" }
+napi.workspace = true
+napi-derive.workspace = true
+
+[build-dependencies]
+napi-build = "2.3.1"

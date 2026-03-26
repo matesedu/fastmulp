@@ -1,0 +1,16 @@
+[package]
+name = "fastmulp-wasm"
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+fastmulp-core = { path = "../fastmulp_core" }
+js-sys.workspace = true
+wasm-bindgen.workspace = true

@@ -1,0 +1,34 @@
+name: release-core
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish-core:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Verify tag matches workspace version
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual="$(awk '
+            /^\[workspace\.package\]/ { in_section=1; next }
+            /^\[/ && in_section { exit }
+            in_section && /^version = "/ {
+              gsub(/^version = "/, "", $0)
+              gsub(/"$/, "", $0)
+              print
+              exit
+            }
+          ' Cargo.toml)"
+          test "${expected}" = "${actual}"
+      - name: Publish fastmulp-core
+        run: cargo publish -p fastmulp-core --locked
+

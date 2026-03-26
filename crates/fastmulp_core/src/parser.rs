@@ -1,0 +1,182 @@
+use memchr::memchr;
+use smallvec::SmallVec;
+
+use crate::{
+    Boundary, Error, Part, Result,
+    boundary_scan::{
+        BoundaryLine, classify_boundary_line, find_boundary_start, find_next_boundary,
+    },
+    content_disposition::{DispositionKind, parse_content_disposition},
+    header::Header,
+};
+
+#[derive(Debug)]
+pub struct Multipart<'a> {
+    body: &'a [u8],
+    parts: SmallVec<[Part<'a>; 4]>,
+}
+
+impl<'a> Multipart<'a> {
+    pub fn body(&self) -> &'a [u8] {
+        self.body
+    }
+    pub fn parts(&self) -> &[Part<'a>] {
+        &self.parts
+    }
+}
+
+pub struct MultipartParser<'a> {
+    body: &'a [u8],
+    boundary: Boundary<'a>,
+    cursor: usize,
+    done: bool,
+}
+
+impl<'a> MultipartParser<'a> {
+    pub fn new(body: &'a [u8], boundary: &'a [u8]) -> Result<Self> {
+        let boundary = Boundary::new(boundary)?;
+        let mut parser = Self {
+            body,
+            boundary,
+            cursor: 0,
+            done: false,
+        };
+        parser.consume_initial_boundary()?;
+        Ok(parser)
+    }
+
+    fn consume_initial_boundary(&mut self) -> Result<()> {
+        let boundary_start = if self.body.starts_with(self.boundary.opening()) {
+            0
+        } else {
+            let Some(prefix_offset) = find_boundary_start(self.body, self.boundary.as_bytes(), 0)
+            else {
+                return Err(Error::InvalidStartingBoundary);
+            };
+
+            prefix_offset + 2
+        };
+
+        self.cursor = boundary_start + self.boundary.opening().len();
+        let Some(line) = classify_boundary_line(self.body, self.cursor) else {
+            return Err(Error::InvalidBoundaryTerminator {
+                offset: self.cursor,
+            });
+        };
+
+        match line {
+            BoundaryLine::Encapsulation { next_cursor } => {
+                self.cursor = next_cursor;
+            }
+            BoundaryLine::Close => {
+                self.cursor = self.body.len();
+                self.done = true;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn parse_next_part(&mut self) -> Result<Part<'a>> {
+        let part_offset = self.cursor;
+        let mut headers = SmallVec::<[Header<'a>; 4]>::new();
+        let mut saw_content_disposition = false;
+        let mut require_name = false;
+        let mut name = None;
+        let mut file_name = None;
+        let mut content_type = None;
+
+        loop {
+            let line_start = self.cursor;
+            let Some(line_end_relative) = memchr(b'\n', &self.body[self.cursor..]) else {
+                return Err(Error::UnexpectedEnd {
+                    offset: self.cursor,
+                });
+            };
+
+            let line_end = self.cursor + line_end_relative;
+            if line_end == self.cursor || self.body[line_end - 1] != b'\r' {
+                return Err(Error::InvalidHeaderLineEnding { offset: line_end });
+            }
+
+            let line = &self.body[self.cursor..line_end - 1];
+            self.cursor = line_end + 1;
+
+            if line.is_empty() {
+                break;
+            }
+
+            if matches!(line[0], b' ' | b'\t') {
+                return Err(Error::InvalidHeaderContinuation { offset: line_start });
+            }
+
+            let header = Header::parse(line, line_start)?;
+            if header.name_eq_ignore_ascii_case(b"content-disposition") {
+                saw_content_disposition = true;
+                let disposition = parse_content_disposition(header.value(), line_start)?;
+                if disposition.kind == DispositionKind::FormData {
+                    require_name = true;
+                }
+                if name.is_none() {
+                    name = disposition.name;
+                }
+                if file_name.is_none() {
+                    file_name = disposition.file_name;
+                }
+            } else if content_type.is_none() && header.name_eq_ignore_ascii_case(b"content-type") {
+                content_type = Some(header.value());
+            }
+
+            headers.push(header);
+        }
+
+        if !saw_content_disposition {
+            return Err(Error::MissingContentDisposition {
+                offset: part_offset,
+            });
+        }
+
+        if require_name && name.is_none() {
+            return Err(Error::MissingPartName {
+                offset: part_offset,
+            });
+        }
+
+        let body_start = self.cursor;
+        let (body_end, next_cursor, is_final) =
+            find_next_boundary(self.body, self.boundary.as_bytes(), body_start)?;
+        self.cursor = next_cursor;
+        if is_final {
+            self.done = true;
+        }
+
+        Ok(Part::new(
+            headers,
+            body_start,
+            body_end,
+            name,
+            file_name,
+            content_type,
+        ))
+    }
+}
+
+impl<'a> Iterator for MultipartParser<'a> {
+    type Item = Result<Part<'a>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        Some(self.parse_next_part())
+    }
+}
+
+pub fn parse<'a>(body: &'a [u8], boundary: &'a [u8]) -> Result<Multipart<'a>> {
+    let parser = MultipartParser::new(body, boundary)?;
+    let mut parts = SmallVec::<[Part<'a>; 4]>::new();
+    for part in parser {
+        parts.push(part?);
+    }
+    Ok(Multipart { body, parts })
+}

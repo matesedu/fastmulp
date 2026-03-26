@@ -1,0 +1,17 @@
+{"run_id":"1774525213-624838000","line":57,"new":{"module_name":"fastmulp_core__tests","snapshot_name":"parses_browser_style_payload","metadata":{"source":"crates/fastmulp-core/src/tests.rs","assertion_line":57,"expression":"snapshot"},"snapshot":"#0 name=field file_name=- content_type=- range=89..100 body=hello world\nheader Content-Disposition=form-data; name=\"field\"\n#1 name=file file_name=hello.txt content_type=text/plain range=238..248 body=hello file\nheader Content-Disposition=form-data; name=\"file\"; filename=\"hello.txt\"\nheader Content-Type=text/plain"},"old":{"module_name":"fastmulp_core__tests","metadata":{},"snapshot":"#0 name=field file_name=- content_type=- range=87..98 body=hello world\nheader Content-Disposition=form-data; name=\"field\"\n#1 name=file file_name=hello.txt content_type=text/plain range=244..254 body=hello file\nheader Content-Disposition=form-data; name=\"file\"; filename=\"hello.txt\"\nheader Content-Type=text/plain"}}
+{"run_id":"1774525224-940031000","line":57,"new":null,"old":null}
+{"run_id":"1774525413-172569000","line":57,"new":null,"old":null}
+{"run_id":"1774525455-399402000","line":57,"new":null,"old":null}
+{"run_id":"1774525488-1773000","line":57,"new":null,"old":null}
+{"run_id":"1774525530-483306000","line":57,"new":null,"old":null}
+{"run_id":"1774527232-459921000","line":57,"new":null,"old":null}
+{"run_id":"1774527323-193338000","line":57,"new":null,"old":null}
+{"run_id":"1774527407-510655000","line":57,"new":null,"old":null}
+{"run_id":"1774527432-506966000","line":57,"new":null,"old":null}
+{"run_id":"1774527466-84853000","line":57,"new":null,"old":null}
+{"run_id":"1774527639-713598000","line":59,"new":null,"old":null}
+{"run_id":"1774527683-428357000","line":59,"new":null,"old":null}
+{"run_id":"1774527775-565590000","line":59,"new":null,"old":null}
+{"run_id":"1774528280-677110000","line":59,"new":null,"old":null}
+{"run_id":"1774528823-905372000","line":59,"new":null,"old":null}
+{"run_id":"1774860435-421522000","line":59,"new":null,"old":null}

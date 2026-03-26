@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Check
+        run: cargo check --workspace --all-targets
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace --lib --tests --examples
+      - name: Doc test (core)
+        run: cargo test -p fastmulp-core --doc
+      - name: Doc test (wasm)
+        run: cargo test -p fastmulp-wasm --doc
+      - name: Bench
+        run: cargo bench -p fastmulp-core --bench parse
+      - name: Wasm check
+        run: cargo check -p fastmulp-wasm --target wasm32-unknown-unknown
