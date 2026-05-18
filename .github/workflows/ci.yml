@@ -22,7 +22,28 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Verify lockfile
+        run: cargo metadata --locked --format-version 1 >/dev/null
+
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Format
+        run: cargo fmt --all -- --check
+
+  check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -31,22 +52,36 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - name: Verify lockfile
-        run: cargo metadata --locked --format-version 1 >/dev/null
-      - name: Format
-        run: cargo fmt --all -- --check
-      - name: Check
+      - name: Workspace check
         run: cargo check --workspace --all-targets --locked
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - name: Test
-        run: cargo test --workspace --lib --tests --examples --locked
-      - name: Doc test (core)
-        run: cargo test -p fastmulp-core --doc --locked
-      - name: Doc test (wasm)
-        run: cargo test -p fastmulp-wasm --doc --locked
       - name: Wasm check
         run: cargo check -p fastmulp-wasm --target wasm32-unknown-unknown --locked
+
+  clippy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Workspace tests
+        run: cargo test --workspace --lib --tests --examples --locked
+      - name: Doc tests
+        run: |
+          cargo test -p fastmulp-core --doc --locked
+          cargo test -p fastmulp-wasm --doc --locked
 
   bench:
     if: github.event_name == 'workflow_dispatch'
