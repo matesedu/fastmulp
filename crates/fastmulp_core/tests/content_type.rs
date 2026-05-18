@@ -13,9 +13,35 @@ fn extracts_quoted_boundary_with_optional_spacing() {
 }
 
 #[test]
-fn rejects_invalid_quoted_boundary_values() {
-  let content_type = "multipart/form-data; boundary=\"unterminated";
+fn extracts_quoted_boundary_with_whitespace_before_next_parameter() {
+  let content_type = "multipart/form-data; boundary=\"quoted-boundary\" \t ; charset=UTF-8";
+  assert_eq!(boundary_from_content_type(content_type), Some("quoted-boundary"));
+}
+
+#[test]
+fn accepts_quoted_pair_escapes_while_scanning_parameters() {
+  let content_type = "multipart/form-data; title=\"needs\\\"escape\"; boundary=abc123";
+  assert_eq!(boundary_from_content_type(content_type), Some("abc123"));
+}
+
+#[test]
+fn rejects_escaped_quoted_boundary_values_requiring_unescape() {
+  let content_type = "multipart/form-data; boundary=\"abc\\:123\"";
   assert_eq!(boundary_from_content_type(content_type), None);
+}
+
+#[test]
+fn rejects_invalid_quoted_values() {
+  let cases = [
+    "multipart/form-data; boundary=\"unterminated",
+    "multipart/form-data; charset=\"unterminated\\",
+    "multipart/form-data; charset=\"value\" junk; boundary=abc123",
+    "multipart/form-data; boundary=\"quoted-boundary\" junk",
+  ];
+
+  for content_type in cases {
+    assert_eq!(boundary_from_content_type(content_type), None, "{content_type}");
+  }
 }
 
 #[test]
@@ -32,4 +58,3 @@ fn validates_boundary_length_and_bytes() {
   assert!(matches!(Boundary::new(b"abc\"123"), Err(Error::InvalidBoundaryByte { .. })));
   assert!(matches!(Boundary::new(&[b'a'; 71]), Err(Error::BoundaryTooLong { .. })));
 }
-

@@ -52,12 +52,19 @@ pub fn boundary_from_content_type(_content_type: &str) -> Option<&str> {
         cursor += 1;
         cursor = skip_ascii_whitespace(bytes, cursor);
 
-        let (value, next) = parse_content_type_value(_content_type, cursor)?;
-        if eq_ignore_ascii_case(name, b"boundary") {
-            return Some(value);
+        let value = parse_content_type_value(_content_type, cursor)?;
+        cursor = skip_ascii_whitespace(bytes, value.next);
+        if cursor < bytes.len() && bytes[cursor] != b';' {
+            return None;
         }
 
-        cursor = next;
+        if eq_ignore_ascii_case(name, b"boundary") {
+            if value.requires_unescape {
+                return None;
+            }
+
+            return Some(value.raw);
+        }
     }
 
     None
@@ -98,7 +105,13 @@ impl<'a> Boundary<'a> {
     }
 }
 
-fn parse_content_type_value(content_type: &str, start: usize) -> Option<(&str, usize)> {
+struct ContentTypeValue<'a> {
+    raw: &'a str,
+    next: usize,
+    requires_unescape: bool,
+}
+
+fn parse_content_type_value(content_type: &str, start: usize) -> Option<ContentTypeValue<'_>> {
     let bytes = content_type.as_bytes();
     if start >= bytes.len() {
         return None;
@@ -107,14 +120,27 @@ fn parse_content_type_value(content_type: &str, start: usize) -> Option<(&str, u
     if bytes[start] == b'"' {
         let inner_start = start + 1;
         let mut cursor = inner_start;
+        let mut requires_unescape = false;
         while cursor < bytes.len() {
             match bytes[cursor] {
                 b'"' => {
                     return content_type
                         .get(inner_start..cursor)
-                        .map(|value| (value, cursor + 1));
+                        .map(|raw| ContentTypeValue {
+                            raw,
+                            next: cursor + 1,
+                            requires_unescape,
+                        });
                 }
-                b'\\' => return None,
+                b'\\' => {
+                    requires_unescape = true;
+                    cursor += 1;
+                    if cursor == bytes.len() {
+                        return None;
+                    }
+
+                    cursor += 1;
+                }
                 _ => {
                     cursor += 1;
                 }
@@ -130,7 +156,11 @@ fn parse_content_type_value(content_type: &str, start: usize) -> Option<(&str, u
     }
 
     let end = trim_ascii_end(bytes, cursor);
-    content_type.get(start..end).map(|value| (value, cursor))
+    content_type.get(start..end).map(|raw| ContentTypeValue {
+        raw,
+        next: cursor,
+        requires_unescape: false,
+    })
 }
 
 fn trim_ascii_end(bytes: &[u8], mut end: usize) -> usize {
