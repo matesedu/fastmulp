@@ -82,7 +82,7 @@ Each release command updates the workspace version in `Cargo.toml`, creates a re
 - `vp run fmt`
 - `vp run lint`
 - `vp run check`
-- `vp run test`  includes the release benchmark run
+- `vp run test`
 - `vp run bench`
 
 ## License
