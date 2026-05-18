@@ -80,6 +80,8 @@ Each release command updates the workspace version in `Cargo.toml`, creates a re
 ## Shared Tasks
 
 - `vp run fmt`
+- `vp run fmt:check`
+- `vp run ci:local`
 - `vp run lint`
 - `vp run check`
 - `vp run test`

@@ -3,10 +3,12 @@
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "fmt": "oxfmt .",
+    "fmt": "cargo fmt --all",
+    "fmt:check": "cargo fmt --all -- --check",
     "lint": "cargo clippy --workspace --all-targets -- -D warnings",
     "check": "cargo check --workspace --all-targets",
     "test": "cargo test --workspace --lib --tests --examples && cargo test -p fastmulp-core --doc && cargo test -p fastmulp-wasm --doc",
+    "ci:local": "pnpm fmt:check && pnpm lint && pnpm test && cargo check -p fastmulp-wasm --target wasm32-unknown-unknown",
     "bench": "cargo bench -p fastmulp-core --bench parse",
     "release:patch": "./scripts/release.sh patch",
     "release:minor": "./scripts/release.sh minor",
@@ -14,9 +16,6 @@
     "release:beta": "./scripts/release.sh beta",
     "build:node": "cargo build -p fastmulp-napi --release",
     "build:wasm": "cargo build -p fastmulp-wasm --target wasm32-unknown-unknown --release"
-  },
-  "devDependencies": {
-    "oxfmt": "^0.36.0"
   },
   "packageManager": "pnpm@10.30.1"
 }
