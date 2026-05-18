@@ -5,16 +5,35 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   publish-core:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Verify tag is on main
+        run: git branch --remote --contains "${GITHUB_SHA}" | grep -qx '  origin/main'
       - name: Verify tag matches workspace version
         run: |
           expected="${GITHUB_REF_NAME#v}"
@@ -29,6 +48,15 @@ jobs:
             }
           ' Cargo.toml)"
           test "${expected}" = "${actual}"
+      - name: Verify lockfile
+        run: cargo metadata --locked --format-version 1 >/dev/null
+      - name: Test core package
+        run: |
+          cargo test -p fastmulp-core --lib --tests --examples --locked
+          cargo test -p fastmulp-core --doc --locked
+      - name: Package core crate
+        run: cargo package -p fastmulp-core --locked --list
+      - name: Publish dry run
+        run: cargo publish -p fastmulp-core --locked --dry-run
       - name: Publish fastmulp-core
         run: cargo publish -p fastmulp-core --locked
-

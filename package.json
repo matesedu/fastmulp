@@ -5,17 +5,18 @@
   "scripts": {
     "fmt": "cargo fmt --all",
     "fmt:check": "cargo fmt --all -- --check",
-    "lint": "cargo clippy --workspace --all-targets -- -D warnings",
-    "check": "cargo check --workspace --all-targets",
-    "test": "cargo test --workspace --lib --tests --examples && cargo test -p fastmulp-core --doc && cargo test -p fastmulp-wasm --doc",
-    "ci:local": "pnpm fmt:check && pnpm lint && pnpm test && cargo check -p fastmulp-wasm --target wasm32-unknown-unknown",
-    "bench": "cargo bench -p fastmulp-core --bench parse",
+    "lint": "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "check": "cargo check --workspace --all-targets --locked",
+    "test": "cargo test --workspace --lib --tests --examples --locked && cargo test -p fastmulp-core --doc --locked && cargo test -p fastmulp-wasm --doc --locked",
+    "ci:local": "pnpm fmt:check && pnpm lint && pnpm test && cargo check -p fastmulp-wasm --target wasm32-unknown-unknown --locked",
+    "bench": "cargo bench -p fastmulp-core --bench parse --locked",
+    "package:core": "cargo package -p fastmulp-core --locked --allow-dirty --list && cargo publish -p fastmulp-core --locked --allow-dirty --dry-run",
     "release:patch": "./scripts/release.sh patch",
     "release:minor": "./scripts/release.sh minor",
     "release:alpha": "./scripts/release.sh alpha",
     "release:beta": "./scripts/release.sh beta",
-    "build:node": "cargo build -p fastmulp-napi --release",
-    "build:wasm": "cargo build -p fastmulp-wasm --target wasm32-unknown-unknown --release"
+    "build:node": "cargo build -p fastmulp-napi --release --locked",
+    "build:wasm": "cargo build -p fastmulp-wasm --target wasm32-unknown-unknown --release --locked"
   },
   "packageManager": "pnpm@10.30.1"
 }

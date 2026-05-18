@@ -7,6 +7,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
+description = "High-accuracy, low-allocation multipart/form-data parsing"
 edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/mates-dev/fastmulp"

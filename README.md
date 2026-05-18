@@ -86,6 +86,7 @@ Each release command updates the workspace version in `Cargo.toml`, creates a re
 - `vp run check`
 - `vp run test`
 - `vp run bench`
+- `vp run package:core`
 
 ## License
 

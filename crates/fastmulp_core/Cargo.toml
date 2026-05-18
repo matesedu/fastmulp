@@ -1,5 +1,6 @@
 [package]
 name = "fastmulp-core"
+description.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

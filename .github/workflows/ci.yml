@@ -11,39 +11,50 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - name: Verify lockfile
+        run: cargo metadata --locked --format-version 1 >/dev/null
       - name: Format
         run: cargo fmt --all -- --check
       - name: Check
-        run: cargo check --workspace --all-targets
+        run: cargo check --workspace --all-targets --locked
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Test
-        run: cargo test --workspace --lib --tests --examples
+        run: cargo test --workspace --lib --tests --examples --locked
       - name: Doc test (core)
-        run: cargo test -p fastmulp-core --doc
+        run: cargo test -p fastmulp-core --doc --locked
       - name: Doc test (wasm)
-        run: cargo test -p fastmulp-wasm --doc
+        run: cargo test -p fastmulp-wasm --doc --locked
       - name: Wasm check
-        run: cargo check -p fastmulp-wasm --target wasm32-unknown-unknown
+        run: cargo check -p fastmulp-wasm --target wasm32-unknown-unknown --locked
 
   bench:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Bench
-        run: cargo bench -p fastmulp-core --bench parse
+        run: cargo bench -p fastmulp-core --bench parse --locked
