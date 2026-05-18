@@ -6,7 +6,7 @@
     "fmt": "oxfmt .",
     "lint": "cargo clippy --workspace --all-targets -- -D warnings",
     "check": "cargo check --workspace --all-targets",
-    "test": "cargo test --workspace --lib --tests --examples && cargo test -p fastmulp-core --doc && cargo test -p fastmulp-wasm --doc && cargo bench -p fastmulp-core --bench parse",
+    "test": "cargo test --workspace --lib --tests --examples && cargo test -p fastmulp-core --doc && cargo test -p fastmulp-wasm --doc",
     "bench": "cargo bench -p fastmulp-core --bench parse",
     "release:patch": "./scripts/release.sh patch",
     "release:minor": "./scripts/release.sh minor",
